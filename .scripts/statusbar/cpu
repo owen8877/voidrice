@@ -1,12 +1,25 @@
 #!/bin/sh
 
+function compare() {
+    [ 0 -eq `echo $1 '>' $2 | bc -l` ] && exit 1 || exit 0
+}
+
+URGENT_COLOR="#FF0000"
+NORMAL_COLOR="#88ABC4"
+URGENT_PERC="80"
+URGENT_TEMP="65"
+
 case $BLOCK_BUTTON in
-	1) notify-send "<b>🖥 CPU hogs</b>:
+	1) notify-send "<b>CPU hogs</b>:
 $(ps axch -o cmd:15,%cpu --sort=-%cpu | head)" ;;
-	3) notify-send "<b>🖥 CPU module:</b>
+	3) notify-send "<b>CPU module:</b>
 - Shows CPU temperature.
 - Click to show intensive processes.
 - % is of single core." ;;
 esac
 
-sensors | awk '/Core 0/ {print $3}'
+temp=`sensors | awk '/Core 0/ {print $3}' | sed 's/+\([0-9.]*\)°C/\1/'`
+perc=`top -b -n2 -p 1 | fgrep "Cpu(s)" | tail -1 | awk -F'id,' '{ split($1, vs, ","); v=vs[length(vs)]; sub("%", "", v); printf "%.1f\n", 100 - v }'`
+echo "[${perc}%]${temp}°C"
+echo "[${perc}%]${temp}°C"
+( `compare ${perc} $URGENT_PERC` || `compare ${temp} $URGENT_TEMP` ) && echo $URGENT_COLOR || echo $NORMAL_COLOR

@@ -1,11 +1,22 @@
 #!/bin/sh
 
+function compare() {
+    [ 0 -eq `echo $1 '>' $2 | bc -l` ] && exit 1 || exit 0
+}
+
+URGENT_COLOR="#FF0000"
+NORMAL_COLOR="#88ABC4"
+URGENT_LEVEL="80"
+
 case $BLOCK_BUTTON in
-	1) notify-send "<b>🧠 Memory hogs:</b>
+	1) notify-send "<b>Memory hogs:</b>
 $(ps axch -o cmd:15,%mem --sort=-%mem | head)" ;;
-	3) notify-send "<b>🧠 Memory module:</b>
+	3) notify-send "<b>Memory module:</b>
 - Shows Memory Used/Total.
 - Click to show memory hogs." ;;
 esac
 
-free -h | awk '/^Mem:/ {print $3 "/" $2}'
+perc=`free -b | awk '/Mem:/{print int($3/$2*100)}'`
+echo "[${perc}%]"`free -h --si | awk '/^Mem:/ {print $3}'`
+echo "[${perc}%]"`free -h --si | awk '/^Mem:/ {print $3}'`
+`compare ${perc} $URGENT_LEVEL` && echo "$URGENT_COLOR" || echo "$NORMAL_COLOR"
